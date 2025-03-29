@@ -11,7 +11,7 @@
 #include <openssl/err.h>
 
 typedef struct Message {
-	char content[256];
+	char *content;
 	struct Message *next;
 } Message;
 
@@ -29,8 +29,8 @@ enum ACCOUNT {
 };
 
 typedef struct Server {
-	char domain[50];
-	char str_port[6];
+	char *domain;
+	char *str_port;
 	int port;
 	struct Server *next;
 } Server;
@@ -53,6 +53,15 @@ Server
 	return server;
 }
 
+Server
+*server_node(char domain[50], char str_port[6], int port)
+{
+	Server *node = malloc(sizeof(Server)); 
+	node->domain = domain;
+	node->str_port = str_port;
+	return node;
+}
+
 Account 
 *struct_account(void)
 {
@@ -64,18 +73,6 @@ Account
 	return account;
 }
 
-Account
-*createaccnode(char username, char nickname, char realname, char password)
-{
-	Account *newnode = struct_account();
-	newnode->username = username;
-	newnode->nickname = nickname;
-	newnode->realname = realname;
-	newnode->password = password;
-	newnode->next = NULL;
-
-	return newnode;
-}
 char
 *accountfoo(Account *account, enum ACCOUNT ACCOUNTNUM)
 {
@@ -103,6 +100,7 @@ char
 }
 char *putdomain(Server *server)
 {
+	server->domain = malloc(50 * sizeof(char));
 	fprintf(stdout, "server: \n");
 	fgets(server->domain, 50, stdin);
 	server->domain[strcspn(server->domain, "\n")] = '\0';
@@ -111,6 +109,7 @@ char *putdomain(Server *server)
 
 int putport(Server *server)
 {
+	server->str_port = malloc(6 * sizeof(char));
 	fprintf(stdout, "port: \n");
 	fgets(server->str_port, 6, stdin);
 	server->str_port[strcspn(server->str_port, "\n")] = '\0';	
@@ -204,7 +203,6 @@ main(void)
 	char *realname = accountfoo(account, REALNAME);
 	char *nickname = accountfoo(account, NICKNAME);
 
-	int create = create_socket(domain, port);
-	
+	int create = create_socket(domain, port);	
 	close(create);
 }
