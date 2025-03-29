@@ -19,6 +19,7 @@ typedef struct Account {
 	char nickname[10];
 	char username[10];
 	char realname[10];
+	char password[10];
 } Account;
 
 enum ACCOUNT {
@@ -63,6 +64,18 @@ Account
 	return account;
 }
 
+Account
+*createaccnode(char username, char nickname, char realname, char password)
+{
+	Account *newnode = struct_account();
+	newnode->username = username;
+	newnode->nickname = nickname;
+	newnode->realname = realname;
+	newnode->password = password;
+	newnode->next = NULL;
+
+	return newnode;
+}
 char
 *accountfoo(Account *account, enum ACCOUNT ACCOUNTNUM)
 {
