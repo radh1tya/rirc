@@ -7,22 +7,144 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 typedef struct Message {
 	char content[256];
 	struct Message *next;
 } Message;
 
-typedef struct Info {
-	char nickname[50];
-	char username[50];
-	char realname[50];
-} Info;
+typedef struct Account {
+	char nickname[10];
+	char username[10];
+	char realname[10];
+} Account;
 
 typedef struct Server {
 	char domain[50];
-	char str_port[5];
+	char str_port[6];
 	int port;
+	struct Server *next;
 } Server;
+
+void
+clearScreen(void)
+{
+  const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
+  write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 11);
+}
+
+Server 
+*struct_server(void)
+{
+	Server *server = malloc(sizeof(Server));
+	if (server == NULL) {
+		fprintf(stderr, "Failed malloc(sizeof(server))\n");
+		exit(1);
+	}
+	return server;
+}
+
+Account 
+*struct_account(void)
+{
+	Account *account = malloc(sizeof(Account));
+	if (account == NULL) {
+		fprintf(stderr, "Failed malloc(sizeof(account))\n");
+		exit(1);
+	}
+	return account;
+}
+
+char *putdomain(Server *server)
+{
+	fprintf(stdout, "server: \n");
+	fgets(server->domain, 50, stdin);
+	server->domain[strcspn(server->domain, "\n")] = '\0';
+	return server->domain;
+}
+
+int putport(Server *server)
+{
+	fprintf(stdout, "port: \n");
+	fgets(server->str_port, 6, stdin);
+	server->str_port[strcspn(server->str_port, "\n")] = '\0';	
+	server->port = strtol(server->str_port, NULL, 10);
+	return (int)server->port;
+
+}
+char
+*putusername(Account *account)
+{
+	fprintf(stdout, "username: \n");
+	fgets(account->username, 10, stdin);
+	account->username[strcspn(account->username, "\n")] = '\0';
+	return account->username;
+}
+char
+*putnickname(Account *account)
+{
+	fprintf(stdout, "nickname: \n");
+	fgets(account->nickname, 10, stdin);
+	account->nickname[strcspn(account->nickname, "\n")] = '\0';
+	return account->nickname;
+}
+char
+*putrealname(Account *account)
+{
+	fprintf(stdout, "realname: \n");
+	fgets(account->realname, 10, stdin);
+	account->realname[strcspn(account->realname, "\n")] = '\0';
+	return account->realname;
+}
+
+int
+create_socket(char *domain, int port)
+{
+	int sockfd;
+	struct sockaddr_in saddr;
+	struct hostent *host_t;
+
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0) {
+		fprintf(stderr, "sockfd failed\n");
+		return 1;
+	}
+
+	host_t = gethostbyname(domain);
+	if (host_t == NULL) {
+		fprintf(stderr, "gethostbyname failed\n");
+		return 1;
+	}
+	
+	saddr.sin_family = AF_INET;
+	saddr.sin_port = htons(port);
+	memcpy(&saddr.sin_addr.s_addr, 
+			host_t->h_addr_list[0], 
+			host_t->h_length);
+
+	int status = connect(sockfd,
+						(struct sockaddr*)&saddr, 
+						sizeof(saddr));
+
+	if (port == 6697) {
+		SSL_CTX *ctx = SSL_CTX_new(TLS_method());
+		SSL *ssl = SSL_new(ctx);
+		SSL_set_fd(ssl, sockfd);
+		SSL_connect(ssl);
+	}
+
+	if (status == 0) {
+		fprintf(stdout,"connected %s\n", domain);
+	} else {
+		fprintf(stderr,"status failed");
+		return 1;
+	}
+
+	return sockfd;
+}
+
 
 int
 main(void)
@@ -33,9 +155,9 @@ main(void)
 		return 1;
 	}
 
-	Info *info = malloc(sizeof(Info));
-	if (info == NULL) {
-		fprintf(stderr, "Info *info memory allocation failed\n");
+	Account *account = malloc(sizeof(Account));
+	if (account == NULL) {
+		fprintf(stderr, "Account *account memory allocation failed\n");
 		return 1;
 	}
 
@@ -47,31 +169,13 @@ main(void)
 	
 	fprintf(stdout, "rirc - a nothing\n");
 
-	fprintf(stdout, "server: \n");
-	fgets(server->domain, 50, stdin);
-	server->domain[strcspn(server->domain, "\n")] = '\0';
+	char *domain = putdomain(server);
+	int port = putport(server);
+	char *username = putusername(account);
+	char *nickname = putnickname(account);
+	char *realname = putrealname(account);
 
-	fprintf(stdout, "port: \n");
-	fgets(server->str_port, 5, stdin);
-	server->str_port[strcspn(server->str_port, "\n")] = '\0';	
-	server->port = strtol(server->str_port, NULL, 10);
-
-	fprintf(stdout, "nickname: \n");
-	fgets(info->nickname, sizeof(info->nickname), stdin);
-	info->nickname[strcspn(info->nickname, "\n")] = '\0';
-
-	fprintf(stdout, "username: \n");
-	fgets(info->username, sizeof(info->username), stdin);
-	info->username[strcspn(info->username, "\n")] = '\0';
+	int create = create_socket(domain, port);
 	
-	fprintf(stdout, "realname: \n");
-	fgets(info->realname, sizeof(info->realname), stdin);
-	info->realname[strcspn(info->realname, "\n")] = '\0';
-
-
-	/* fprintf(stdout, "%d", server->port); */
-
-	int status, valread, client_fd;
-
-	struct sockaddr_in server_addr;
+	close(create);
 }
