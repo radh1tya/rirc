@@ -3,7 +3,7 @@
 NAME = rirc
 VERSION = 0.0
 
-RIRC_CFLAGS = -std=c89 -Os -DVERSION=\"${VERSION}\" -D_GNU_SOURCE
+RIRC_CFLAGS = -std=c99 -Os -DVERSION=\"${VERSION}\" -D_GNU_SOURCE
 RIRC_LDFLAGS = -lssl -lcrypto
 
 CC = cc

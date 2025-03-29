@@ -59,6 +59,7 @@ Server
 	Server *node = malloc(sizeof(Server)); 
 	node->domain = domain;
 	node->str_port = str_port;
+	node->next = NULL;
 	return node;
 }
 
@@ -98,26 +99,64 @@ char
 	target[strcspn(target, "\n")] = '\0';
 	return target;
 }
-char *putdomain(Server *server)
+
+char
+*putdomain(void)
 {
-	server->domain = malloc(50 * sizeof(char));
+	char *domain = malloc(50 * sizeof(char));
 	fprintf(stdout, "server: \n");
-	fgets(server->domain, 50, stdin);
-	server->domain[strcspn(server->domain, "\n")] = '\0';
-	return server->domain;
+	fgets(domain, 50, stdin);
+	domain[strcspn(domain, "\n")] = '\0';
+	return domain;
 }
 
-int putport(Server *server)
+int
+putport(void)
 {
-	server->str_port = malloc(6 * sizeof(char));
+	int port;
+	char *str_port = malloc(6 * sizeof(char));
 	fprintf(stdout, "port: \n");
-	fgets(server->str_port, 6, stdin);
-	server->str_port[strcspn(server->str_port, "\n")] = '\0';	
-	server->port = strtol(server->str_port, NULL, 10);
-	return (int)server->port;
-
+	fgets(str_port, 6, stdin);
+	str_port[strcspn(str_port, "\n")] = '\0';	
+	port = strtol(str_port, NULL, 10);
+	return (int)port;
 }
 
+Server
+*coba(Server *server)
+{
+	Server *tmp = malloc(sizeof(Server));
+
+	tmp->domain = putdomain();
+	tmp->port = putport();
+	tmp->next = NULL;
+
+	if(server == NULL) 
+		return tmp;
+
+	Server *ptr = server;
+	while(ptr->next != NULL) {
+		ptr = ptr->next;
+	}
+
+	ptr->next = tmp;
+	return server;
+}
+
+Server
+*display(Server *server)
+{
+	Server *ptr = server;
+
+	if ( ptr == NULL ) {
+		printf("null\n");
+	}
+	while (ptr != NULL) {
+		fprintf(stdout,"%s\n%d\n", ptr->domain, ptr->port);
+		ptr = ptr->next;
+	}
+	return server;
+}
 int
 create_socket_ssl(int sockfd) {
 	char buffer[1024];
@@ -188,21 +227,17 @@ main(void)
 		return 1;
 	}
 
-	Server *server = malloc(sizeof(Server));
-	if (server == NULL) {
-		fprintf(stderr, "Server *server memory allocation failed\n");
-		return 1;
-	}
 	
 	fprintf(stdout, "rirc - a nothing\n");
 
-	char *domain = putdomain(server);
-	int port = putport(server);
-	
+	Server *server = NULL;
+	server = coba(server);
+	display(server);
 	char *username = accountfoo(account, USERNAME);	
 	char *realname = accountfoo(account, REALNAME);
 	char *nickname = accountfoo(account, NICKNAME);
 
-	int create = create_socket(domain, port);	
+	int create = create_socket(server->domain,server->port);	
+	
 	close(create);
 }
