@@ -21,6 +21,12 @@ typedef struct Account {
 	char realname[10];
 } Account;
 
+enum ACCOUNT {
+	NICKNAME,
+	USERNAME,
+	REALNAME
+};
+
 typedef struct Server {
 	char domain[50];
 	char str_port[6];
@@ -57,6 +63,31 @@ Account
 	return account;
 }
 
+char
+*accountfoo(Account *account, enum ACCOUNT ACCOUNTNUM)
+{
+	char *target;
+	const char *label;
+
+	switch (ACCOUNTNUM) {
+		case NICKNAME:
+		target = account->nickname;
+		label = "nickname";
+		break;
+		case USERNAME:
+		target = account->username;
+		label = "username";
+		break;
+		case REALNAME:
+		target = account->realname;
+		label = "realname";
+	}
+
+	fprintf(stdout, "%s: \n", label);
+	fgets(target, 10, stdin);
+	target[strcspn(target, "\n")] = '\0';
+	return target;
+}
 char *putdomain(Server *server)
 {
 	fprintf(stdout, "server: \n");
@@ -74,34 +105,22 @@ int putport(Server *server)
 	return (int)server->port;
 
 }
-char
-*putusername(Account *account)
-{
-	fprintf(stdout, "username: \n");
-	fgets(account->username, 10, stdin);
-	account->username[strcspn(account->username, "\n")] = '\0';
-	return account->username;
-}
-char
-*putnickname(Account *account)
-{
-	fprintf(stdout, "nickname: \n");
-	fgets(account->nickname, 10, stdin);
-	account->nickname[strcspn(account->nickname, "\n")] = '\0';
-	return account->nickname;
-}
-char
-*putrealname(Account *account)
-{
-	fprintf(stdout, "realname: \n");
-	fgets(account->realname, 10, stdin);
-	account->realname[strcspn(account->realname, "\n")] = '\0';
-	return account->realname;
+
+int
+create_socket_ssl(int sockfd) {
+	char buffer[1024];
+	SSL_CTX *ctx = SSL_CTX_new(TLS_method());
+	SSL *ssl = SSL_new(ctx);
+	SSL_set_fd(ssl, sockfd);
+	SSL_connect(ssl);
+	SSL_read(ssl, buffer, 1023);
+	printf("%s\n", buffer);
 }
 
 int
 create_socket(char *domain, int port)
 {
+
 	int sockfd;
 	struct sockaddr_in saddr;
 	struct hostent *host_t;
@@ -129,10 +148,7 @@ create_socket(char *domain, int port)
 						sizeof(saddr));
 
 	if (port == 6697) {
-		SSL_CTX *ctx = SSL_CTX_new(TLS_method());
-		SSL *ssl = SSL_new(ctx);
-		SSL_set_fd(ssl, sockfd);
-		SSL_connect(ssl);
+		create_socket_ssl(sockfd);
 	}
 
 	if (status == 0) {
@@ -144,7 +160,6 @@ create_socket(char *domain, int port)
 
 	return sockfd;
 }
-
 
 int
 main(void)
@@ -171,9 +186,10 @@ main(void)
 
 	char *domain = putdomain(server);
 	int port = putport(server);
-	char *username = putusername(account);
-	char *nickname = putnickname(account);
-	char *realname = putrealname(account);
+	
+	char *username = accountfoo(account, USERNAME);	
+	char *realname = accountfoo(account, REALNAME);
+	char *nickname = accountfoo(account, NICKNAME);
 
 	int create = create_socket(domain, port);
 	
